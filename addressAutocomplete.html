@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Autocomplete</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <!-- font awesome -->
+    <script src="https://use.fontawesome.com/3621681573.js"></script>
+    
+  </head>
+
+  <body class="container">
+    
+    <h3 class="text-center" style="margin-bottom:40px">Address Autocomplete</h3>
+
+    <div class="form-group row">
+      <div class="col-md-5">
+        
+        <div class="input-group">
+          <input type="text" class="form-control" id="address-autocomplete" placeholder="Enter an address">
+          <div class="input-group-addon"><i class="fa fa-circle-o-notch" ></i></div>
+        </div>
+
+        <div id="search-options" class="list-group">
+          <!-- hold the server responses -->
+        </div>
+        
+      </div>
+
+      <div class="col-md-7" style="border:1px solid #D3D3D3;border-radius:10px;">
+        <div style="padding:25px;">  
+          <p><strong>Full Address: </strong><span id="matched-address"> </span></p>
+          <p><strong>Suburb: </strong><span id="matched-suburb"> </span></p>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Flat Number: </strong><span id="matched-flat-num"> </span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Level: </strong><span id="matched-level"> </span></p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Street Number: </strong><span id="matched-street-number"> </span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Street Name: </strong><span id="matched-street-name"> </span></p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Post Code: </strong><span id="matched-postcode"> </span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>State: </strong><span id="matched-state"> </span></p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Latitude: </strong><span id="matched-lat"> </span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Longitude: </strong><span id="matched-long"> </span></p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    <script>
+      
+      var throttle = function (cb, timeLimit) {
+        var wait = false;
+        return function () {
+          if (!wait) {
+            cb();
+            wait = true;
+            setTimeout(function () {
+              wait = false;
+            }, timeLimit);
+          }
+        };
+      };
+
+      //if the enter key is hit
+      $('#address-autocomplete').on('keyup', function (e) {
+
+        throttle(function () {
+          //function calls the API and returns the results
+          $.ajax({
+              contentType: 'application/json',
+              data: JSON.stringify({
+                streetAddress: $('#address-autocomplete').val(),
+                apiKey: 'MAPPIFY_API_KEY'
+              }),
+              dataType: 'json',
+              success: function(data){
+
+                var inHTML = "";
+
+                $.each(data.result, function(index, value){
+                    var newItem = "<a id='"+index+"' class='address-choices list-group-item'>"+ value.streetAddress + "</a>"
+                    inHTML += newItem;  
+                });
+
+                $('#search-options').empty();
+                $('#search-options').append(inHTML);
+
+                $('.address-choices').on('click', function (e) {
+                  //on click take data and populate below and remove the a's in the list
+                  var address = e.target.innerHTML;
+                  var listId = e.target.id;
+
+                  //get the address this belongs to and print to the screen
+                  $('#matched-address').html(address);
+                  $('#search-options').empty();
+                  $('#address-autocomplete').val(address);
+
+                  var flatNum = data.result[listId].flatNumberPrefix + data.result[listId].flatNumber + data.result[listId].flatNumberSuffix;
+
+                  if (flatNum) {
+                    $('#matched-flat-num').html(flatNum);
+                  }
+
+                  if (data.result[listId].levelNumber) {
+                    $('#matched-level').html(data.result[listId].levelNumber);
+                  }
+
+                  $('#matched-suburb').html(data.result[listId].suburb);
+                  $('#matched-street-number').html(data.result[listId].numberFirst);
+                  $('#matched-street-name').html(data.result[listId].streetName);
+                  $('#matched-postcode').html(data.result[listId].postCode);
+                  $('#matched-state').html(data.result[listId].state);
+                  $('#matched-lat').html(data.result[listId].location.lat);
+                  $('#matched-long').html(data.result[listId].location.lon);
+
+
+                });
+              },
+              error: function(){
+                  console.log("Device control failed");
+              },
+              type: 'POST',
+              url: 'https://mappify.io/api/rpc/address/autocomplete'
+          });
+
+        },1000)();
+
+      });
+
+      
+
+      //once recieved data then put into the correct boxes on the screen
+    </script>
+
+  </body>
+</html>
